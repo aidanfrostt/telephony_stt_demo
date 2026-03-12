@@ -520,18 +520,24 @@
         const urlParams = new URLSearchParams(window.location.search);
         let wsUrl = urlParams.get('server');
 
-        if (!wsUrl) {
+        if (!wsUrl || wsUrl === '') {
+            // No server param provided, fallback to current host
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             wsUrl = `${protocol}//${window.location.host}/ui-ws`;
         } else {
-            if (wsUrl.startsWith('http')) {
-                wsUrl = wsUrl.replace('http', 'ws');
-            }
-            if (!wsUrl.includes('/ui-ws')) {
-                wsUrl = wsUrl.replace(/\/$/, '') + '/ui-ws';
-            }
-            if (!wsUrl.startsWith('ws')) {
+            // Clean up the provided server URL, ensuring it is a wss:// and ends with /ui-ws
+            if (wsUrl.startsWith('http://')) {
+                wsUrl = wsUrl.replace('http://', 'ws://');
+            } else if (wsUrl.startsWith('https://')) {
+                wsUrl = wsUrl.replace('https://', 'wss://');
+            } else if (!wsUrl.startsWith('ws')) {
                 wsUrl = 'wss://' + wsUrl;
+            }
+            
+            // Append the correct websocket endpoint suffix
+            wsUrl = wsUrl.replace(/\/$/, ''); // strip trailing slash
+            if (!wsUrl.endsWith('/ui-ws')) {
+                wsUrl += '/ui-ws';
             }
         }
         
@@ -707,7 +713,10 @@
             try {
                 let apiBase = '';
                 if (urlParams.get('server')) {
-                    apiBase = wsUrl.replace('wss://', 'https://').replace('ws://', 'http://').replace('/ui-ws', '');
+                    // Strip the WSS protocol and path back to the pure REST base URL
+                    apiBase = wsUrl.replace('wss://', 'https://')
+                                   .replace('ws://', 'http://')
+                                   .replace(/\/ui-ws$/, '');
                 }
                 const res = await fetch(`${apiBase}/api/call`, {
                     method: 'POST',
