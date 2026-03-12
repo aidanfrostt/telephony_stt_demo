@@ -523,8 +523,16 @@
         if (!wsUrl) {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             wsUrl = `${protocol}//${window.location.host}/ui-ws`;
-        } else if (!wsUrl.includes('/ui-ws')) {
-            wsUrl = wsUrl.replace(/\/$/, '') + '/ui-ws';
+        } else {
+            if (wsUrl.startsWith('http')) {
+                wsUrl = wsUrl.replace('http', 'ws');
+            }
+            if (!wsUrl.includes('/ui-ws')) {
+                wsUrl = wsUrl.replace(/\/$/, '') + '/ui-ws';
+            }
+            if (!wsUrl.startsWith('ws')) {
+                wsUrl = 'wss://' + wsUrl;
+            }
         }
         
         let ws;

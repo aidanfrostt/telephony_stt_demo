@@ -66,6 +66,14 @@ func main() {
 			return
 		}
 		stats.AddUIConn(conn)
+		defer stats.RemoveUIConn(conn)
+
+		// Keep the connection alive until client disconnects
+		for {
+			if _, _, err := conn.ReadMessage(); err != nil {
+				break
+			}
+		}
 	})
 
 	// Setup Twilio Call API endpoints

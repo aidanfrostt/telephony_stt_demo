@@ -61,12 +61,17 @@ type TwilioMark struct {
 }
 
 func handleConnection(w http.ResponseWriter, r *http.Request) {
+	if !websocket.IsWebSocketUpgrade(r) {
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("W-L-Calls Standalone Telephony STT Gateway - WebSocket server active"))
+		return
+	}
+
 	// Upgrade original request to WebSocket
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		w.Header().Set("Content-Type", "text/plain")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("W-L-Calls Standalone Telephony STT Gateway - WebSocket server running"))
+		log.Printf("Upgrade error: %v", err)
 		return
 	}
 	defer conn.Close()
