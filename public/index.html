@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telephony/STT Gateway - Live Analytics</title>
+    <!-- Use Outfit for premium tech look -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Premium Stealth Wealth Dark Palette */
+            --bg-base: #030407;
+            --bg-surface: rgba(15, 17, 26, 0.6);
+            --bg-card: rgba(22, 25, 37, 0.7);
+            
+            --border-glow: rgba(255, 255, 255, 0.06);
+            --border-highlight: rgba(255, 255, 255, 0.12);
+            
+            --text-primary: #ededed;
+            --text-secondary: #8c8f9b;
+            --text-muted: #575a66;
+            
+            --accent-glow: #4f46e5; /* Indigo */
+            --accent-success: #10b981; /* Emerald */
+            --accent-error: #ef4444; /* Rose */
+        }
+
+        body {
+            margin: 0;
+            padding: 3rem 4rem;
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            box-sizing: border-box;
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(79, 70, 229, 0.08), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.05), transparent 25%);
+            background-attachment: fixed;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 3rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-glow);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .brand-title {
+            font-size: 1.75rem;
+            font-weight: 500;
+            letter-spacing: -0.02em;
+            margin: 0;
+            color: #fff;
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+        }
+
+        .brand-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            border-radius: 100px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--accent-success);
+            letter-spacing: 0.02em;
+        }
+
+        .status-badge.offline {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: var(--accent-error);
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background-color: currentColor;
+            border-radius: 50%;
+            box-shadow: 0 0 12px currentColor;
+            animation: pulse-op 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse-op {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Layout */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            grid-template-rows: 1fr;
+            gap: 2rem;
+            height: calc(100vh - 10rem);
+            min-height: 600px;
+        }
+
+        /* Sidebar Column */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            height: 100%;
+        }
+
+        /* Main Content Column */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            height: 100%;
+        }
+
+        /* Glass Panels */
+        .panel {
+            background: var(--bg-surface);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-glow);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transition: border-color 0.3s ease;
+        }
+        
+        .panel:hover {
+            border-color: var(--border-highlight);
+        }
+
+        .panel-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border-glow);
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            letter-spacing: 0.01em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.01);
+        }
+
+        .panel-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            position: relative;
+        }
+
+        /* Metrics Row */
+        .metrics-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .metric-card {
+            background: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
+            border: 1px solid var(--border-glow);
+            border-radius: 16px;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.3);
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+            opacity: 0.5;
+        }
+
+        .metric-label {
+            color: var(--text-secondary);
+            font-size: 0.70rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 500;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 300;
+            color: #fff;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: -0.03em;
+        }
+
+        /* Active Calls List */
+        .call-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glow);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+            animation: slideIn 0.3s ease forwards;
+        }
+
+        .call-item::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0; width: 3px;
+            background: var(--accent-glow);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .call-info {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .call-id {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+        }
+
+        .call-stats {
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .call-time {
+            color: var(--accent-success);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .call-bytes {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Transcripts */
+        .transcript-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            padding: 0.5rem;
+        }
+
+        .transcript-bubble {
+            padding: 0.85rem 1.15rem;
+            border-radius: 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-glow);
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            max-width: 90%;
+            position: relative;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            animation: fadeInUp 0.3s ease;
+        }
+
+        .transcript-bubble.interim {
+            opacity: 0.6;
+            border-style: dashed;
+            font-style: italic;
+        }
+
+        .speaker-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: rgba(79, 70, 229, 0.15);
+            color: #818cf8;
+            padding: 3px 6px;
+            border-radius: 4px;
+            margin-right: 8px;
+            border: 1px solid rgba(79, 70, 229, 0.3);
+        }
+
+        /* Empty States */
+        .empty-state {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+            color: var(--text-muted);
+        }
+
+        .empty-state.visible {
+            opacity: 1;
+        }
+
+        .empty-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        /* Dialer Form */
+        .dialer-panel {
+            flex-shrink: 0;
+        }
+        
+        .dialer-body {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            padding: 1rem 1.25rem;
+        }
+
+        .input-field {
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--border-glow);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            width: 100%;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        .input-field:focus {
+            border-color: var(--accent-glow);
+        }
+        
+        .btn-primary {
+            background: var(--accent-glow);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: filter 0.2s;
+            font-family: inherit;
+            margin-top: 0.5rem;
+        }
+        
+        .btn-primary:hover {
+            filter: brightness(1.2);
+        }
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            filter: grayscale(0.5);
+        }
+
+        /* Animations */
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+        @media (max-width: 1024px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            .sidebar { height: auto; }
+            .panel { min-height: 400px; }
+            .metrics-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="brand">
+            <h1 class="brand-title">Telephony Gateway <span class="brand-subtitle">High-Concurrency STT Bridge</span></h1>
+        </div>
+        <div class="status-badge" id="connStatus">
+            <div class="pulse-dot"></div>
+            Connecting...
+        </div>
+    </div>
+
+    <div class="dashboard">
+        
+        <!-- ================= SIDEBAR (Controls & Status) ================= -->
+        <div class="sidebar">
+            <!-- Dialer Panel -->
+            <div class="panel dialer-panel">
+                <div class="panel-header">
+                    <div>
+                        Initiate Bridge Call
+                        <div style="font-size: 0.65rem; color: var(--text-muted); font-weight: 400; margin-top: 2px;">Twilio REST API Dialing</div>
+                    </div>
+                </div>
+                <div class="dialer-body">
+                    <input type="text" id="numA" placeholder="Participant A (+1...)" class="input-field" />
+                    <input type="text" id="numB" placeholder="Participant B (+1...)" class="input-field" />
+                    <button id="btnConnect" class="btn-primary" onclick="initiateCall()">Connect Call</button>
+                </div>
+            </div>
+
+            <!-- Active Connections -->
+            <div class="panel" style="flex: 1;">
+                <div class="panel-header">
+                    Active Streams
+                    <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: 400;">WebSocket Twilio/Deepgram</span>
+                </div>
+                <div class="panel-body" id="callsList">
+                    <div class="empty-state visible" id="callsEmptyState">
+                        <div class="empty-icon">⌘</div>
+                        <div style="font-size: 0.85rem;">Waiting for incoming streams...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= MAIN CONTENT (Metrics & Logs) ================= -->
+        <div class="main-content">
+            
+            <!-- Top Metrics Row -->
+            <div class="metrics-row">
+                <div class="metric-card">
+                    <span class="metric-label">Concurrent Streams</span>
+                    <span class="metric-value" id="valActive">0</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-label">Total Calls Handled</span>
+                    <span class="metric-value" id="valTotal">0</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-label">Media Bytes Processed</span>
+                    <span class="metric-value" id="valBytes">0.00 B</span>
+                </div>
+            </div>
+
+            <!-- Central Transcription Buffer -->
+            <div class="panel" style="flex: 1;">
+                <div class="panel-header">
+                    Global NLP Firehose
+                    <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 400;">Real-time Transcript Stream</span>
+                </div>
+                <div class="panel-body">
+                    <div class="empty-state visible" id="transcriptEmptyState">
+                        <div class="empty-icon">≈</div>
+                        <div style="font-size: 0.85rem;">Speech stream idle...</div>
+                    </div>
+                    <div class="transcript-feed" id="transcriptFeed"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Use ?server=wss://... parameter for external hosted backend overriding
+        const urlParams = new URLSearchParams(window.location.search);
+        let wsUrl = urlParams.get('server');
+
+        if (!wsUrl) {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            wsUrl = `${protocol}//${window.location.host}/ui-ws`;
+        } else if (!wsUrl.includes('/ui-ws')) {
+            wsUrl = wsUrl.replace(/\/$/, '') + '/ui-ws';
+        }
+        
+        let ws;
+        const callElements = {};
+        const interimBubbles = {};
+
+        function formatBytes(bytes) {
+            if (!+bytes) return '0.00 B';
+            const k = 1024, sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
+        }
+
+        function formatTimeDiff(startTimeStr) {
+            const start = new Date(startTimeStr);
+            const diff = Math.floor((new Date() - start) / 1000);
+            const m = Math.floor(diff / 60);
+            const s = diff % 60;
+            return `${m}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function updateConnectionBadge(connected) {
+            const badge = document.getElementById('connStatus');
+            if (connected) {
+                badge.className = 'status-badge';
+                badge.innerHTML = `<div class="pulse-dot"></div> System Online`;
+            } else {
+                badge.className = 'status-badge offline';
+                badge.innerHTML = `<div class="pulse-dot" style="animation:none; opacity:1"></div> Disconnected`;
+                
+                // Dim metrics to show stale data
+                document.querySelectorAll('.metric-value').forEach(el => el.style.opacity = '0.5');
+            }
+        }
+
+        function connect() {
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                updateConnectionBadge(true);
+                document.querySelectorAll('.metric-value').forEach(el => el.style.opacity = '1');
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'state_update') {
+                    handleStateUpdate(data);
+                } else if (data.type === 'transcript') {
+                    handleTranscript(data);
+                }
+            };
+
+            ws.onclose = () => {
+                updateConnectionBadge(false);
+                setTimeout(connect, 3000);
+            };
+            
+            ws.onerror = () => {
+                ws.close();
+            };
+        }
+
+        function handleStateUpdate(data) {
+            // Update Top Metrics
+            const activeCount = Object.keys(data.activeCalls || {}).length;
+            document.getElementById('valActive').innerText = activeCount;
+            document.getElementById('valTotal').innerText = data.totalCalls || 0;
+            document.getElementById('valBytes').innerText = formatBytes(data.bytesTotal || 0);
+
+            const list = document.getElementById('callsList');
+            const emptyState = document.getElementById('callsEmptyState');
+            
+            if (activeCount === 0) {
+                emptyState.classList.add('visible');
+            } else {
+                emptyState.classList.remove('visible');
+            }
+
+            // Remove dead calls
+            for (const id in callElements) {
+                if (!data.activeCalls[id]) {
+                    callElements[id].style.opacity = '0';
+                    setTimeout(() => list.removeChild(callElements[id]), 300);
+                    delete callElements[id];
+                    delete interimBubbles[id];
+                }
+            }
+
+            // Sync alive calls
+            for (const id in data.activeCalls) {
+                const call = data.activeCalls[id];
+                if (!callElements[id]) {
+                    const el = document.createElement('div');
+                    el.className = 'call-item';
+                    const shortId = id.length > 14 ? '...' + id.substring(id.length - 11) : id;
+                    
+                    el.innerHTML = `
+                        <div class="call-info">
+                            <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;">Stream Active</span>
+                            <span class="call-id">${shortId}</span>
+                        </div>
+                        <div class="call-stats">
+                            <span class="call-time" id="time-${id}">0:00</span>
+                            <span class="call-bytes" id="bytes-${id}">0 B</span>
+                        </div>
+                    `;
+                    list.appendChild(el);
+                    callElements[id] = el;
+                }
+                
+                document.getElementById(`time-${id}`).innerText = formatTimeDiff(call.startTime);
+                document.getElementById(`bytes-${id}`).innerText = formatBytes(call.bytesRead);
+            }
+        }
+
+        function handleTranscript(data) {
+            const feed = document.getElementById('transcriptFeed');
+            const emptyState = document.getElementById('transcriptEmptyState');
+            emptyState.classList.remove('visible');
+
+            const shortId = data.callId.substring(data.callId.length - 6);
+            
+            if (data.isFinal) {
+                if (interimBubbles[data.callId]) {
+                    interimBubbles[data.callId].remove();
+                    delete interimBubbles[data.callId];
+                }
+
+                const el = document.createElement('div');
+                el.className = 'transcript-bubble';
+                el.innerHTML = `<span class="speaker-badge">${shortId}</span> ${data.text}`;
+                feed.appendChild(el);
+
+            } else {
+                if (!interimBubbles[data.callId]) {
+                    const el = document.createElement('div');
+                    el.className = 'transcript-bubble interim';
+                    feed.appendChild(el);
+                    interimBubbles[data.callId] = el;
+                }
+                interimBubbles[data.callId].innerHTML = `<span class="speaker-badge">${shortId}</span> ${data.text}`;
+            }
+
+            // Cap items to prevent memory bloat over long sessions
+            if (feed.children.length > 60) {
+                feed.removeChild(feed.firstChild);
+            }
+
+            // Scroll to bottom smoothly
+            feed.parentElement.scrollTo({
+                top: feed.parentElement.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+
+        // Clock Loop for DOM updating active call times
+        setInterval(() => {
+            if(Object.keys(callElements).length > 0 && ws?.readyState === WebSocket.OPEN) {
+                // UI local ticking fallback while waiting for state updates
+            }
+        }, 1000);
+
+        async function initiateCall() {
+            const nA = document.getElementById('numA').value.trim();
+            const nB = document.getElementById('numB').value.trim();
+            if(!nA || !nB) return alert("Please enter both phone numbers (+1...)");
+
+            const btn = document.getElementById('btnConnect');
+            btn.innerText = "Dialing...";
+            btn.disabled = true;
+
+            try {
+                let apiBase = '';
+                if (urlParams.get('server')) {
+                    apiBase = wsUrl.replace('wss://', 'https://').replace('ws://', 'http://').replace('/ui-ws', '');
+                }
+                const res = await fetch(`${apiBase}/api/call`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ number1: nA, number2: nB })
+                });
+                
+                if(res.ok) {
+                    document.getElementById('numA').value = '';
+                    document.getElementById('numB').value = '';
+                } else {
+                    const text = await res.text();
+                    alert("Dial failed: " + text);
+                }
+            } catch(e) {
+                alert("Error connecting: " + e.message);
+            }
+
+            btn.innerText = "Connect Call";
+            btn.disabled = false;
+        }
+
+        // Start connection
+        connect();
+    </script>
+</body>
+</html>
