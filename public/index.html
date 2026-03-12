@@ -521,9 +521,15 @@
         let wsUrl = urlParams.get('server');
 
         if (!wsUrl || wsUrl === '') {
-            // No server param provided, fallback to current host
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            wsUrl = `${protocol}//${window.location.host}/ui-ws`;
+            // No server param provided, check if we are on Netlify
+            if (window.location.host.includes('netlify.app')) {
+                // Automatically route to the Render backend for the Github Showcase!
+                wsUrl = 'wss://telephony-stt-demo.onrender.com/ui-ws';
+            } else {
+                // Fallback to current host (for Local or native Render hosting)
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                wsUrl = `${protocol}//${window.location.host}/ui-ws`;
+            }
         } else {
             // Clean up the provided server URL, ensuring it is a wss:// and ends with /ui-ws
             if (wsUrl.startsWith('http://')) {
